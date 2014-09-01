@@ -1,0 +1,25 @@
+{
+  "name": "cssom-patcher",
+  "version": "1.0.0",
+  "description": "A generic read-only LiveStyle patcher for CSS Object Model. Works in any modern browser environment.",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/livestyle/cssom-patcher.git"
+  },
+  "main": "index.js",
+  "scripts": {
+    "test": "./node_modules/.bin/mocha --reporter spec"
+  },
+  "keywords": [
+    "cssom",
+    "livestyle",
+    "live reload",
+    "live update"
+  ],
+  "author": "Sergey Chikuyonok <serge.che@gmail.com>",
+  "license": "ISC",
+  "devDependencies": {
+    "cssom": "^0.3.0",
+    "mocha": "^1.21.4"
+  }
+}
