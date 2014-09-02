@@ -1,5 +1,5 @@
 {
-  "name": "cssom-patcher",
+  "name": "livestyle-cssom-patcher",
   "version": "1.0.0",
   "description": "A generic read-only LiveStyle patcher for CSS Object Model. Works in any modern browser environment.",
   "repository": {
