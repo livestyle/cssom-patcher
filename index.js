@@ -281,9 +281,9 @@
 	/**
 	 * Returns hash with available stylesheets. The keys of hash
 	 * are absolute urls and values are pointers to StyleSheet objects
-	 * @return {Object
+	 * @return {Object}
 	 */
-	exports.stylesheet = function() {
+	exports.stylesheets = function() {
 		return findStyleSheets(document.styleSheets);
 	};
 
