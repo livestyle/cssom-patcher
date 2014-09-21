@@ -4,13 +4,20 @@
  * incoming updates from LiveStyle which is also works in any
  * modern browser environment.
  */
-if (typeof module === 'object' && typeof define !== 'function') {
-	var define = function (factory) {
-		module.exports = factory(module);
-	};
-}
-
-define(function(module) {
+(function (root, factory) {
+	if (typeof define === 'function' && define.amd) {
+		// AMD. Register as an anonymous module.
+		define(['exports'], function (exports, b) {
+			factory(exports);
+		});
+	} else if (typeof exports === 'object') {
+		// CommonJS
+		factory(exports);
+	} else {
+		// Browser globals
+		factory((root.livestyleCSSOM = {}));
+	}
+}(this, function (exports) {
 	function last(arr) {
 		return arr[arr.length - 1];
 	}
@@ -271,119 +278,118 @@ define(function(module) {
 		return out;
 	}
 
-	return module.exports = {
-		/**
-		 * Returns hash with available stylesheets. The keys of hash
-		 * are absolute urls and values are pointers to StyleSheet objects
-		 * @return {Object
-		 */
-		stylesheets: function() {
-			return findStyleSheets(document.styleSheets);
-		},
-
-		/**
-		 * Returns plain list of all available rules in stylesheet
-		 * @param  {CSSStyleSheet} stylesheet
-		 * @return {Array}
-		 */
-		toList: function(stylesheet, options) {
-			if (!stylesheet.ref) {
-				stylesheet = this.createIndex(stylesheet);
-			}
-			return makeList(stylesheet);
-		},
-
-		/**
-		 * Updates given stylesheet with patches
-		 * @param  {CSSStyleSheet} stylesheet
-		 * @param  {Array} patches
-		 * @returns {StyleSheet} Patched stylesheet on success,
-		 * `false` if it’s impossible to apply patch on given 
-		 * stylesheet.
-		 */
-		patch: function(stylesheet, patches) {
-			var that = this;
-			if (typeof stylesheet === 'string') {
-				stylesheet = this.stylesheets()[stylesheet];
-			}
-
-			if (!stylesheet || !stylesheet.cssRules) {
-				return false;
-			}
-
-			var index = this.createIndex(stylesheet);
-			var ruleList = this.toList(index);
-
-			if (!Array.isArray(patches)) {
-				patches = [patches];
-			}
-
-			patches.forEach(function(patch) {
-				var cssPath = patch.path;
-				var match = locate(ruleList, cssPath);
-
-				if (match) {
-					if (patch.action === 'remove') {
-						return parent(match.ref).deleteRule(match.ix);
-					}
-					patchRule(match.ref, patch);
-				} else {
-					bestPartialMatch(index, cssPath, patch);
-				}
-			});
-
-			return stylesheet;
-		},
-
-		createIndex: function(ctx, parent) {
-			var lookup = {};
-			var rule, name, item, path;
-
-			if (!parent) {
-				parent = {
-					ix: -1,
-					name: ':root',
-					path: null,
-					pathString: '',
-					parent: null,
-					children: [],
-					ref: ctx
-				};
-			}
-
-
-			var rules = ctx.cssRules;
-			if (!rules) {
-				return;
-			}
-
-			for (var i = 0, il = rules.length; i < il; i++) {
-				rule = rules[i];
-				name = ruleName(rule);
-				if (name in lookup) {
-					lookup[name]++;
-				} else {
-					lookup[name] = 1;
-				}
-
-				path = parent.path ? parent.path.slice(0) : [];
-				path.push([name, lookup[name]]);
-
-				item = {
-					ix: i,
-					name: name,
-					path: path,
-					pathString: stringifyPath(path),
-					parent: parent,
-					children: [],
-					ref: rule
-				};
-
-				parent.children.push(item);
-				this.createIndex(rule, item);
-			}
-
-			return parent;
-		}
+	/**
+	 * Returns hash with available stylesheets. The keys of hash
+	 * are absolute urls and values are pointers to StyleSheet objects
+	 * @return {Object
+	 */
+	exports.stylesheet = function() {
+		return findStyleSheets(document.styleSheets);
 	};
-});
+
+	/**
+	 * Returns plain list of all available rules in stylesheet
+	 * @param  {CSSStyleSheet} stylesheet
+	 * @return {Array}
+	 */
+	exports.toList = function(stylesheet, options) {
+		if (!stylesheet.ref) {
+			stylesheet = this.createIndex(stylesheet);
+		}
+		return makeList(stylesheet);
+	};
+
+	/**
+	 * Updates given stylesheet with patches
+	 * @param  {CSSStyleSheet} stylesheet
+	 * @param  {Array} patches
+	 * @returns {StyleSheet} Patched stylesheet on success,
+	 * `false` if it’s impossible to apply patch on given 
+	 * stylesheet.
+	 */
+	exports.patch = function(stylesheet, patches) {
+		var that = this;
+		if (typeof stylesheet === 'string') {
+			stylesheet = this.stylesheets()[stylesheet];
+		}
+
+		if (!stylesheet || !stylesheet.cssRules) {
+			return false;
+		}
+
+		var index = this.createIndex(stylesheet);
+		var ruleList = this.toList(index);
+
+		if (!Array.isArray(patches)) {
+			patches = [patches];
+		}
+
+		patches.forEach(function(patch) {
+			var cssPath = patch.path;
+			var match = locate(ruleList, cssPath);
+
+			if (match) {
+				if (patch.action === 'remove') {
+					return parent(match.ref).deleteRule(match.ix);
+				}
+				patchRule(match.ref, patch);
+			} else {
+				bestPartialMatch(index, cssPath, patch);
+			}
+		});
+
+		return stylesheet;
+	};
+
+	exports.createIndex = function(ctx, parent) {
+		var lookup = {};
+		var rule, name, item, path;
+
+		if (!parent) {
+			parent = {
+				ix: -1,
+				name: ':root',
+				path: null,
+				pathString: '',
+				parent: null,
+				children: [],
+				ref: ctx
+			};
+		}
+
+		var rules = ctx.cssRules;
+		if (!rules) {
+			return;
+		}
+
+		for (var i = 0, il = rules.length; i < il; i++) {
+			rule = rules[i];
+			name = ruleName(rule);
+			if (name in lookup) {
+				lookup[name]++;
+			} else {
+				lookup[name] = 1;
+			}
+
+			path = parent.path ? parent.path.slice(0) : [];
+			path.push([name, lookup[name]]);
+
+			item = {
+				ix: i,
+				name: name,
+				path: path,
+				pathString: stringifyPath(path),
+				parent: parent,
+				children: [],
+				ref: rule
+			};
+
+			parent.children.push(item);
+			this.createIndex(rule, item);
+		}
+
+		return parent;
+	};
+
+	return exports;
+}));
