@@ -41,10 +41,10 @@
 		};
 
 		return {
-			path: path,
+			path: compact(path),
 			action: action,
-			update: action === 'update' ? properties : [],
-			remove: action !== 'update' ? properties : []
+			update: action === 'update' ? compact(properties) : [],
+			remove: action !== 'update' ? compact(properties) : []
 		};
 	}
 

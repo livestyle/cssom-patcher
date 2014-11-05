@@ -159,6 +159,7 @@
 	}
 
 	function guessLocation(stylesheet, path) {
+		path = path.slice(0);
 		var part, rule, candidates;
 
 		var find = function(collection, path) {
@@ -243,7 +244,14 @@
 			while (subrule = loc.rest.pop()) {
 				accumulated = subrule[0] + '{' + accumulated + '}';
 			}
-			var ix = ctx.insertRule(accumulated, ctx.cssRules.length);
+
+			try {
+				var ix = ctx.insertRule(accumulated, ctx.cssRules.length);
+			} catch (e) {
+				console.warn('LiveStyle:', e.message);
+				return;
+			}
+
 			ctx = ctx.cssRules[ix];
 			while (ctx.cssRules && ctx.cssRules.length) {
 				ctx = ctx.cssRules[0];
