@@ -1,0 +1,10 @@
+@import url(file2.css);
+
+div {
+	background: red;
+}
+
+div p {
+	padding: 10px;
+	color: #fff;
+}

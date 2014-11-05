@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8" />
+	<title>Browser CSSOM test</title>
+	<link rel="stylesheet" href="file1.css" />
+</head>
+<body>
+	<div>
+		<p class="sample">Hello world</p>
+	</div>
+	<script src="../../index.js"></script>
+	<script>
+
+	function parsePatch(patch, action) {
+		action = action || 'update';
+
+		var obj = {};
+		var m = patch.match(/^(.+?)\{(.*?)\}/);
+		var path = m[1].trim().split('/').map(function(part) {
+			var num = 1;
+			part = part.replace(/\[(\d+)\]$/, function(str, n) {
+				num = +n;
+				return '';
+			});
+			return [part.trim(), num];
+		});
+
+		var properties = m[2].trim().split(';').map(function(prop) {
+			var parts = prop.split(':');
+			return {
+				name: parts.shift().trim(),
+				value: parts.join(':').trim()
+			};
+		});
+
+		var compact = function(arr) {
+			return arr.filter(function(item) {
+				return !!item;
+			});
+		};
+
+		return {
+			path: path,
+			action: action,
+			update: action === 'update' ? properties : [],
+			remove: action !== 'update' ? properties : []
+		};
+	}
+
+	function applyPatch(file, patch, patchAction) {
+		// find matching stylesheet
+		var stylesheets = livestyleCSSOM.stylesheets();
+		var match = null;
+		Object.keys(stylesheets).some(function(uri) {
+			if (uri === file) {
+				return match = stylesheets[uri];
+			}
+		});
+
+		if (!match) {
+			// no exact match, try to find stylesheet whose
+			// url ends with given file name
+			Object.keys(stylesheets).some(function(uri) {
+				if (uri.substr(-file.length) === file) {
+					return match = stylesheets[uri];
+				}
+			});
+		}
+
+		if (match) {
+			if (typeof patch === 'string') {
+				patch = parsePatch(patch, patchAction);
+			}
+			console.log('Applying patch %o on %o', patch, match);
+			livestyleCSSOM.patch(match, patch);
+		} else {
+			console.warn('Can’t find stylesheet for %c%s', 'color:blue', file);
+		}
+	}
+	</script>
+</body>
+</html>
