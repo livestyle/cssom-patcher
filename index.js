@@ -113,6 +113,11 @@
 			return patchRuleByValue(rule, patch);
 		}
 
+		if (!rule || !rule.style) {
+			// not a CSSStyleRule, aborting
+			return;
+		}
+
 		// update properties
 		rule.style.cssText += patch.update.map(function(prop) {
 			return prop.name + ':' + prop.value + ';';
@@ -316,7 +321,7 @@
 	 * stylesheet.
 	 */
 	exports.patch = function(stylesheet, patches) {
-		var that = this;
+		var self = this;
 		if (typeof stylesheet === 'string') {
 			stylesheet = this.stylesheets()[stylesheet];
 		}
@@ -325,15 +330,15 @@
 			return false;
 		}
 
-		var index = this.createIndex(stylesheet);
-		var ruleList = this.toList(index);
 
+		var index = this.createIndex(stylesheet);
 		if (!Array.isArray(patches)) {
 			patches = [patches];
 		}
 
 		patches.forEach(function(patch) {
 			var cssPath = patch.path;
+			var ruleList = self.toList(index);
 			var match = locate(ruleList, cssPath);
 
 			if (match) {
@@ -341,7 +346,7 @@
 					return parent(match.ref).deleteRule(match.ix);
 				}
 				patchRule(match.ref, patch);
-			} else {
+			} else if (patch.action !== 'remove') {
 				bestPartialMatch(index, cssPath, patch);
 			}
 		});
