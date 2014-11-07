@@ -124,7 +124,7 @@
 		});
 
 		// update properties
-		rule.style.cssText += ';' + patch.update.map(function(prop) {
+		rule.style.cssText += patch.update.map(function(prop) {
 			return prop.name + ':' + prop.value + ';';
 		}).join('');
 	}
