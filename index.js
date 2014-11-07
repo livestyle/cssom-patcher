@@ -118,15 +118,15 @@
 			return;
 		}
 
-		// update properties
-		rule.style.cssText += patch.update.map(function(prop) {
-			return prop.name + ':' + prop.value + ';';
-		}).join('');
-
 		// remove properties
 		patch.remove.forEach(function(prop) {
 			rule.style.removeProperty(prop.name);
 		});
+
+		// update properties
+		rule.style.cssText += ';' + patch.update.map(function(prop) {
+			return prop.name + ':' + prop.value + ';';
+		}).join('');
 	}
 
 	function patchRuleByValue(rule, patch) {
