@@ -10,8 +10,18 @@
 		<p class="sample">Hello world</p>
 	</div>
 	<div class="image"></div>
-	<script src="../../index.js"></script>
+	<script src="../../node_modules/requirejs/require.js"></script>
 	<script>
+	var livestyleCSSOM = null;
+	requirejs.config({
+		paths: {
+			'livestyle-pathfinder': '../../node_modules/livestyle-pathfinder/index'
+		}
+	});
+
+	requirejs(['../../index'], function(ls) {
+		livestyleCSSOM = ls;
+	});
 
 	function parsePatch(patch, action) {
 		action = action || 'update';
