@@ -4,20 +4,13 @@
  * incoming updates from LiveStyle which is also works in any
  * modern browser environment.
  */
-(function (root, factory) {
-	if (typeof define === 'function' && define.amd) {
-		// AMD. Register as an anonymous module.
-		define(['exports'], function (exports) {
-			factory(require, exports);
-		});
-	} else if (typeof exports === 'object') {
-		// CommonJS
-		factory(require, exports);
-	} else {
-		// Browser globals
-		factory(require, (root.livestyleCSSOM = {}));
-	}
-}(this, function(require, exports) {
+if (typeof module === 'object' && typeof define !== 'function') {
+	var define = function (factory) {
+		module.exports = factory(require, exports, module);
+	};
+}
+
+define(function(require, exports, module) {
 	var pathfinder = require('livestyle-pathfinder');
 
 	/**
@@ -307,4 +300,4 @@
 	};
 
 	return exports;
-}));
+});
