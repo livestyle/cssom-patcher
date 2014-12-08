@@ -259,9 +259,16 @@ define(function(require, exports, module) {
 	}
 
 	function deleteRuleFromMatch(match) {
-		parent(match.node.ref).deleteRule(match.ix);
+		try {
+			parent(match.node.ref).deleteRule(match.ix);
+		} catch (e) {
+			console.warn('LiveStyle:', e);
+			console.warn(match);
+		}
 		var ix = match.parent.children.indexOf(match);
-		match.parent.children.splice(ix, 1);
+		if (~ix) {
+			match.parent.children.splice(ix, 1);
+		}
 	}
 
 	function normalizeHints(hints) {
