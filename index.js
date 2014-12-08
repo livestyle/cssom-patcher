@@ -24,9 +24,9 @@ define(function(require, exports, module) {
 		}
 	}
 
-	NodePath.prototype.toString = function(skipPos) {
+	NodePath.prototype.toString = function() {
 		return this.components.map(function(c) {
-			return c.valueOf(skipPos);
+			return c.toString(true);
 		}).join('/');
 	};
 
@@ -44,8 +44,8 @@ define(function(require, exports, module) {
 		this.pos = pos || 1;
 	}
 
-	NodePathComponent.prototype.toString = function(skipPos) {
-		return this.name +  (!skipPos || this.pos > 1 ? '|' + this.pos : '');
+	NodePathComponent.prototype.toString = function() {
+		return this.name +  (this.pos > 1 ? '|' + this.pos : '');
 	};
 
 	/**
@@ -80,12 +80,7 @@ define(function(require, exports, module) {
 		return out;
 	}
 
-	/**
-	 * Returns name of given rule
-	 * @param  {CSSRule} rule
-	 * @return {String}
-	 */
-	function ruleName(rule) {
+	function atRuleName(rule) {
 		/*
 		 * Reference:
 		 * UNKNOWN_RULE: 0
@@ -101,16 +96,24 @@ define(function(require, exports, module) {
 		 * WEBKIT_FILTER_RULE: 17
 		 * HOST_RULE: 1001
 		 */
-		var sel = rule.selectorText;
-		if (sel) {
-			return sel;
-		}
-
 		switch (rule.type) {
 			case 2: return '@charset';
 			case 3: return '@import';
 			case 4: return '@media ' + rule.media.mediaText;
 			case 5: return '@font-face';
+		}
+	}
+
+	/**
+	 * Returns name of given rule
+	 * @param  {CSSRule} rule
+	 * @return {String}
+	 */
+	function ruleName(rule) {
+		
+		var sel = rule.selectorText || atRuleName(rule);
+		if (sel) {
+			return sel;
 		}
 
 		var text = rule.cssText;
@@ -129,27 +132,97 @@ define(function(require, exports, module) {
 	}
 
 	/**
+	 * Check if given @-rule equals to given patch property
+	 * @param  {CSSRule} rule
+	 * @param  {Object}  prop
+	 * @return {Boolean}
+	 */
+	function atRuleEquals(rule, prop) {
+		if (atRuleName(rule) !== prop.name) {
+			return false;
+		}
+
+		switch (prop.name) {
+			case '@charset':
+				return rule.encoding === prop.value.trim().replace(/^['"]|['"]$/g, '');
+			case '@import':
+				return rule.href === prop.value.trim().replace(/^url\(['"]?|['"]?\)$/g, '');
+		}
+	}
+
+	/**
 	 * Updates given rule with data from patch
 	 * @param  {CSSRule} rule
 	 * @param  {Array} patch
 	 */
 	function patchRule(rule, patch) {
-		if (!rule || !rule.style) {
+		if (!rule) {
 			// not a CSSStyleRule, aborting
+			console.log('aborting');
 			return;
 		}
 
-		// TODO handle @-rules
+		var reAt = /^@/, childRule;
 
 		// remove properties
 		patch.remove.forEach(function(prop) {
-			rule.style.removeProperty(prop.name);
+			if (reAt.test(prop)) {
+				// @-properties are not properties but rules
+				if (!rule.cssRules || !rule.cssRules.length) {
+					return;
+				}
+				
+				for (var i = 0, il = rule.cssRules.length; i < il; i++) {
+					if (atRuleEquals(rule.cssRules[i], prop)) {
+						return rule.deleteRule(i);
+					}
+				}
+			} else if (rule.style) {
+				rule.style.removeProperty(prop.name);
+			}
 		});
 
-		// update properties
-		rule.style.cssText += patch.update.map(function(prop) {
+		var updateRules = {
+			'@charset': [],
+			'@import': []
+		};
+
+		// update properties on current rule
+		var properties = patch.update.map(function(prop) {
+			if (prop.name in updateRules) {
+				updateRules[prop.name].push(prop);
+				return '';
+			}
+
 			return prop.name + ':' + prop.value + ';';
 		}).join('');
+
+		if (rule.style) {
+			rule.style.cssText += properties;
+		}
+
+		console.log('Subrules', updateRules);
+
+		// insert @-properties as rules
+		while (childRule = updateRules['@charset'].pop()) {
+			rule.insertRule(childRule.name + ' ' + childRule.value, 0);
+		}
+
+		if (updateRules['@import'].length && rule.cssRules) {
+			// @import’s must be inserted right after existing imports
+			var childIx = 0, childName;
+			for (var i = rule.cssRules.length - 1; i >= 0; i--) {
+				childName = atRuleName(rule.cssRules[i]);
+				if (childName === '@charset' || childName === '@import') {
+					childIx = i;
+					break;
+				}
+			}
+
+			while (childRule = updateRules['@import'].pop()) {
+				rule.insertRule(childRule.name + ' ' + childRule.value, childIx);
+			}
+		}
 	}
 
 	function setupFromPartialMatch(match) {
@@ -250,7 +323,6 @@ define(function(require, exports, module) {
 				if (patch.action === 'remove') {
 					return deleteRuleFromMatch(location);
 				}
-
 				return patchRule(location.node.ref, patch);
 			}
 
@@ -281,11 +353,16 @@ define(function(require, exports, module) {
 			return parent;
 		}
 
-		for (var i = 0, il = rules.length, rule, item; i < il; i++) {
+		for (var i = 0, il = rules.length, rule, name, item; i < il; i++) {
 			rule = rules[i];
+			name = ruleName(rule);
+			if (name === '@charset' || name === '@import') {
+				continue;
+			}
+
 			item = {
 				ix: i,
-				name: ruleName(rule),
+				name: name,
 				parent: parent,
 				children: [],
 				ref: rule,

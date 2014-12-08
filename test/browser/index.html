@@ -27,7 +27,7 @@
 		action = action || 'update';
 
 		var obj = {};
-		var m = patch.match(/^(.+?)\{(.*?)\}/);
+		var m = patch.match(/^(.*?)\{(.*?)\}/);
 		var path = m[1].trim().split('/').map(function(part) {
 			var num = 1;
 			part = part.replace(/\[(\d+)\]$/, function(str, n) {
