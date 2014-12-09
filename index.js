@@ -110,7 +110,6 @@ define(function(require, exports, module) {
 	 * @return {String}
 	 */
 	function ruleName(rule) {
-		
 		var sel = rule.selectorText || atRuleName(rule);
 		if (sel) {
 			return sel;
@@ -158,7 +157,6 @@ define(function(require, exports, module) {
 	function patchRule(rule, patch) {
 		if (!rule) {
 			// not a CSSStyleRule, aborting
-			console.log('aborting');
 			return;
 		}
 
@@ -200,8 +198,6 @@ define(function(require, exports, module) {
 		if (rule.style) {
 			rule.style.cssText += properties;
 		}
-
-		console.log('Subrules', updateRules);
 
 		// insert @-properties as rules
 		while (childRule = updateRules['@charset'].pop()) {
@@ -260,7 +256,7 @@ define(function(require, exports, module) {
 
 	function deleteRuleFromMatch(match) {
 		try {
-			parent(match.node.ref).deleteRule(match.ix);
+			parent(match.node.ref).deleteRule(match.index);
 		} catch (e) {
 			console.warn('LiveStyle:', e);
 			console.warn(match);
