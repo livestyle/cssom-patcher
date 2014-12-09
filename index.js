@@ -231,8 +231,12 @@ define(function(require, exports, module) {
 		}, '');
 
 		var parent = match.parent;
+		var insertIndex = parent.ref.cssRules ? parent.ref.cssRules.length : 0;
+		if (match.node) {
+			insertIndex = match.node.ix;
+		}
 		try {
-			var ix = parent.ref.insertRule(accumulated, match.index);
+			var ix = parent.ref.insertRule(accumulated, insertIndex);
 		} catch (e) {
 			console.warn('LiveStyle:', e.message);
 			return;
@@ -242,9 +246,9 @@ define(function(require, exports, module) {
 		var indexed = exports.createIndex(ctx);
 		indexed.name = ruleName(ctx);
 		indexed.ix = ix;
-		parent.children.splice(ix, 0, indexed);
-		for (var i = ix + 1, il = parent.children.length; i < il; i++) {
-			parent.children.ix++;
+		parent.children.splice(match.index, 0, indexed);
+		for (var i = match.index + 1, il = parent.children.length; i < il; i++) {
+			parent.children[i].ix++;
 		}
 
 		while (ctx.cssRules && ctx.cssRules.length) {
@@ -256,14 +260,17 @@ define(function(require, exports, module) {
 
 	function deleteRuleFromMatch(match) {
 		try {
-			parent(match.node.ref).deleteRule(match.index);
+			parent(match.node.ref).deleteRule(match.node.ix);
 		} catch (e) {
 			console.warn('LiveStyle:', e);
 			console.warn(match);
 		}
-		var ix = match.parent.children.indexOf(match);
+		var ix = match.parent.children.indexOf(match.node);
 		if (~ix) {
 			match.parent.children.splice(ix, 1);
+			for (var i = ix, il = match.parent.children.length, child; i < il; i++) {
+				match.parent.children[i].ix--;
+			}
 		}
 	}
 
@@ -314,7 +321,7 @@ define(function(require, exports, module) {
 
 		patches.forEach(function(patch) {
 			var path = new NodePath(patch.path);
-			var hints = hints ? normalizeHints(patch.hints) : null;
+			var hints = patch.hints ? normalizeHints(patch.hints) : null;
 			var location = pathfinder.find(index, path, hints);
 			if (location.partial && patch.action === 'remove') {
 				// node is absent, do nothing
