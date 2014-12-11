@@ -40,13 +40,17 @@ define(function(require, exports, module) {
 			name = name[0];
 		}
 
-		this.name = name;
+		this.name = normalizeSelector(name);
 		this.pos = pos || 1;
 	}
 
 	NodePathComponent.prototype.toString = function() {
 		return this.name +  (this.pos > 1 ? '|' + this.pos : '');
 	};
+
+	function normalizeSelector(sel) {
+		return sel.trim().replace(/:+(before|after)$/, '::$1');
+	}
 
 	/**
 	 * Findes all stylesheets in given context, including
@@ -235,6 +239,8 @@ define(function(require, exports, module) {
 		if (match.node) {
 			insertIndex = match.node.ix;
 		}
+
+		// console.log('Insert rule at index', insertIndex, match);
 		try {
 			var ix = parent.ref.insertRule(accumulated, insertIndex);
 		} catch (e) {
@@ -265,6 +271,7 @@ define(function(require, exports, module) {
 			console.warn('LiveStyle:', e);
 			console.warn(match);
 		}
+		// console.log('Removed rule at index', match.node.ix);
 		var ix = match.parent.children.indexOf(match.node);
 		if (~ix) {
 			match.parent.children.splice(ix, 1);
@@ -372,7 +379,7 @@ define(function(require, exports, module) {
 
 			item = {
 				ix: i,
-				name: name,
+				name: normalizeSelector(name),
 				parent: parent,
 				children: [],
 				ref: rule,
