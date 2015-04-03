@@ -340,7 +340,17 @@ define(function(require, exports, module) {
 				if (patch.action === 'remove') {
 					return deleteRuleFromMatch(location);
 				}
-				return patchRule(location.node.ref, patch);
+				var rule = location.node.ref;
+				if (patch.action === 'add') {
+					try {
+						var ix = location.parent.ref.insertRule(ruleName(rule) + '{}', location.node.ix + 1);
+						rule = location.parent.ref.cssRules[ix];
+					} catch (e) {
+						console.warn('LiveStyle:', e.message);
+						return;
+					}
+				}
+				return patchRule(rule, patch);
 			}
 
 			patchRule(setupFromPartialMatch(location), patch);

@@ -61,4 +61,15 @@ describe('CSSOM Patcher', function() {
 		};
 		assert.equal(apply('a{b:1;}', patch), '');
 	});
+
+	it('add missing', function() {
+		var patch = {
+			path: [['c', 1]], 
+			action: 'add',
+			update: [{name: 'd', value: '1'}],
+			remove: []
+		};
+
+		assert.equal(apply('a{b:1;} c{d:1;}', patch), 'a {b: 1;} c {d: 1;} c {d: 1;}');
+	});
 });
