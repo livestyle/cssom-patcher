@@ -13,6 +13,10 @@ if (typeof module === 'object' && typeof define !== 'function') {
 define(function(require, exports, module) {
 	var pathfinder = require('livestyle-pathfinder');
 
+	function last(arr) {
+		return arr[arr.length - 1];
+	}
+
 	/**
 	 * Node path shim
 	 */
@@ -321,7 +325,7 @@ define(function(require, exports, module) {
 		}
 
 
-		var index = this.createIndex(stylesheet);
+		// var index = this.createIndex(stylesheet);
 		if (!Array.isArray(patches)) {
 			patches = [patches];
 		}
@@ -329,6 +333,8 @@ define(function(require, exports, module) {
 		patches.forEach(function(patch) {
 			var path = new NodePath(patch.path);
 			var hints = patch.hints ? normalizeHints(patch.hints) : null;
+			var index = self.createIndex(stylesheet);
+
 			var location = pathfinder.find(index, path, hints);
 			if (location.partial && patch.action === 'remove') {
 				// node is absent, do nothing
@@ -343,7 +349,8 @@ define(function(require, exports, module) {
 				var rule = location.node.ref;
 				if (patch.action === 'add') {
 					try {
-						var ix = location.parent.ref.insertRule(ruleName(rule) + '{}', location.node.ix + 1);
+						var insertAt = patch.hints ? pathfinder.indexForHint(location.parent, last(patch.hints)) : location.node.ix + 1;
+						var ix = location.parent.ref.insertRule(ruleName(rule) + '{}', insertAt);
 						rule = location.parent.ref.cssRules[ix];
 					} catch (e) {
 						console.warn('LiveStyle:', e.message);
