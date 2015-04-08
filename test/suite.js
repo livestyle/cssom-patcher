@@ -72,4 +72,19 @@ describe('CSSOM Patcher', function() {
 
 		assert.equal(apply('a{b:1;} c{d:1;}', patch), 'a {b: 1;} c {d: 1;} c {d: 1;}');
 	});
+
+	it('sync properties', function() {
+		var patch = {
+			path: [['a', 1]], 
+			action: 'update',
+			update: [{name: 'd', value: '5'}],
+			remove: [],
+			all: [{name: 'b', value: '10'}, {name: 'c', value: '20'}, {name: 'd', value: '5'}]
+		};
+
+		// Node.js CSSOM doesn’t know about shorthand CSS-properties (for example,
+		// `background` is a shorthand for `background-color`, `background-position` etc.)
+		// so we just check if workflow with `all` patch property operated normally.
+		assert.equal(apply('a{b:1; c:2; d:3}', patch), 'a {b: 1; c: 2; d: 5;}');
+	});
 });

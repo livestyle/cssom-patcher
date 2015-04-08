@@ -12,6 +12,7 @@ if (typeof module === 'object' && typeof define !== 'function') {
 
 define(function(require, exports, module) {
 	var pathfinder = require('livestyle-pathfinder');
+	var splitBy = require('./lib/split');
 
 	function last(arr) {
 		return arr[arr.length - 1];
@@ -158,6 +159,57 @@ define(function(require, exports, module) {
 	}
 
 	/**
+	 * Updates properties in given CSS rule
+	 * @param  {CSSRule} rule
+	 * @param  {Array} properties
+	 * @param  {Patch} patch
+	 */
+	function updateProperties(rule, properties, patch) {
+		if (!rule || !rule.style) {
+			return;
+		}
+
+		if (patch && patch.all) {
+			// Sync all properties for given rule.
+			// For example, if user updated `background` property,
+			// the existing (and not updated) `background-position` 
+			// will be lost. If patch contains `all` properties,
+			// we can re-apply these properties from existing
+			// rule to prevent this side-effect
+			var propsLookup = {};
+			// console.log('extract', rule.style.cssText);
+			splitBy(rule.style.cssText, ';').forEach(function(token) {
+				var parts = token.split(':');
+				if (parts.length > 1) {
+					propsLookup[parts.shift().trim()] = parts.join(':').trim()
+				}
+			});
+
+			properties.forEach(function(p) {
+				propsLookup[p.name] = p.value;
+			});
+
+			properties = patch.all.map(function(p) {
+				return {
+					name: p.name,
+					value: propsLookup[p.name]
+				};
+			});
+
+			// console.log('final payload', properties);
+		}
+
+		// properties.forEach(function(p) {
+		// 	console.log('set %s to %s', p.name, p.value);
+		// 	rule.style[p.name] = p.value;
+		// });
+
+		rule.style.cssText += properties.map(function(p) {
+			return p.name + ':' + p.value;
+		}).join(';');
+	}
+
+	/**
 	 * Updates given rule with data from patch
 	 * @param  {CSSRule} rule
 	 * @param  {Array} patch
@@ -194,18 +246,16 @@ define(function(require, exports, module) {
 		};
 
 		// update properties on current rule
-		var properties = patch.update.map(function(prop) {
+		var properties = patch.update.filter(function(prop) {
 			if (prop.name in updateRules) {
 				updateRules[prop.name].push(prop);
-				return '';
+				return false;
 			}
 
-			return prop.name + ':' + prop.value + ';';
-		}).join('');
+			return true;
+		});
 
-		if (rule.style) {
-			rule.style.cssText += properties;
-		}
+		updateProperties(rule, properties, patch);
 
 		// insert @-properties as rules
 		while (childRule = updateRules['@charset'].pop()) {
@@ -325,7 +375,6 @@ define(function(require, exports, module) {
 		}
 
 
-		// var index = this.createIndex(stylesheet);
 		if (!Array.isArray(patches)) {
 			patches = [patches];
 		}
