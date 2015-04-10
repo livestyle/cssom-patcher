@@ -170,43 +170,44 @@ define(function(require, exports, module) {
 		}
 
 		if (patch && patch.all) {
-			// Sync all properties for given rule.
-			// For example, if user updated `background` property,
-			// the existing (and not updated) `background-position` 
-			// will be lost. If patch contains `all` properties,
-			// we can re-apply these properties from existing
-			// rule to prevent this side-effect
-			var propsLookup = {};
-			// console.log('extract', rule.style.cssText);
-			splitBy(rule.style.cssText, ';').forEach(function(token) {
-				var parts = token.split(':');
-				if (parts.length > 1) {
-					propsLookup[parts.shift().trim()] = parts.join(':').trim()
-				}
-			});
-
-			properties.forEach(function(p) {
-				propsLookup[p.name] = p.value;
-			});
-
-			properties = patch.all.map(function(p) {
-				return {
-					name: p.name,
-					value: propsLookup[p.name]
-				};
-			});
-
-			// console.log('final payload', properties);
+			// there are few challenges when changing updated
+			// properies via CSSOM:
+			// 1. Updating a a short-hand property only (for example,
+			// `background` or `font`) will reset subsequent
+			// full properties (`background-size`, `line-height` etc.)
+			// that are not changed
+			// 2. Chrome has buggy implementation of `background` shorthand:
+			// at least it looses `background-size` property.
+			// 
+			// So right now the only valid and simple solution is to
+			// re-apply all exising in source CSS properties even if they
+			// were not updated or they doesn’t exist in current CSSOM rule
+			properties = patch.all;
 		}
 
-		// properties.forEach(function(p) {
-		// 	console.log('set %s to %s', p.name, p.value);
-		// 	rule.style[p.name] = p.value;
-		// });
-
-		rule.style.cssText += properties.map(function(p) {
-			return p.name + ':' + p.value;
+		var style = rule.style;
+		properties.forEach(function(p) {
+			nameVariations(p.name).some(function(name) {
+				if (name in style) {
+					style[name] = p.value;
+					return true;
+				}
+			});
 		}).join(';');
+	}
+
+	function nameVariations(name) {
+		var out = [name];
+		if (name.indexOf('-') !== -1) {
+			var camelCased = name.replace(/\-([a-z])/g, function(str, l) {
+				return l.toUpperCase();
+			});
+			out.push(camelCased);
+			if (name[0] === '-') {
+				out.push(camelCased[0].toLowerCase() + camelCased.slice(1));
+			}
+		}
+		return out;
 	}
 
 	/**
