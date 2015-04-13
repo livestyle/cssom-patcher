@@ -85,6 +85,8 @@ describe('CSSOM Patcher', function() {
 		// Node.js CSSOM doesn’t know about shorthand CSS-properties (for example,
 		// `background` is a shorthand for `background-color`, `background-position` etc.)
 		// so we just check if workflow with `all` patch property operated normally.
-		assert.equal(apply('a{b:1; c:2; d:3}', patch), 'a {b: 1; c: 2; d: 5;}');
+
+		// In this case, patcher will override all properties from rule
+		assert.equal(apply('a{b:1; c:2; d:3}', patch), 'a {b: 10; c: 20; d: 5;}');
 	});
 });

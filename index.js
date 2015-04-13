@@ -180,20 +180,23 @@ define(function(require, exports, module) {
 			// at least it looses `background-size` property.
 			// 
 			// So right now the only valid and simple solution is to
-			// re-apply all exising in source CSS properties even if they
+			// re-apply all exising properties from source CSS even if they
 			// were not updated or they doesn’t exist in current CSSOM rule
 			properties = patch.all;
 		}
 
 		var style = rule.style;
 		properties.forEach(function(p) {
-			nameVariations(p.name).some(function(name) {
-				if (name in style) {
-					style[name] = p.value;
-					return true;
-				}
+			var important = null;
+			var value = p.value.replace(/\!important\s*$/, function() {
+				important = 'important';
+				return '';
+			})
+
+			nameVariations(p.name).forEach(function(name) {
+				style.setProperty(name, value, important);
 			});
-		}).join(';');
+		});
 	}
 
 	function nameVariations(name) {
