@@ -1,4 +1,5 @@
 var assert = require('assert');
+require('babel/register');
 var split = require('../lib/split');
 
 describe('String split', function() {

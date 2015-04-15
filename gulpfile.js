@@ -1,20 +1,19 @@
 var gulp = require('gulp');
-var uglify = require('gulp-uglify');
-var browserify = require('browserify');
-var streamify = require('gulp-streamify');
-var through = require('through2');
-var source = require('vinyl-source-stream');
+var js = require('js-bundler');
+var rename = require('gulp-rename');
 
-gulp.task('build', function() {
-	return browserify({
-		entries: './index.js',
+gulp.task('js', function() {
+	return gulp.src('./index.js')
+	.pipe(js({
 		detectGlobals: false,
 		standalone: 'livestyleCSSOM'
-	})
-	.bundle()
-	.pipe(source('livestyle-cssom.js'))
-	.pipe(streamify(uglify()))
+	}))
+	.pipe(rename('livestyle-cssom.js'))
 	.pipe(gulp.dest('./out'));
 });
 
-gulp.task('default', ['build']);
+gulp.task('watch', function() {
+	gulp.watch(['./index.js', 'lib/*.js'], ['js']);
+});
+
+gulp.task('default', ['js']);
