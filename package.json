@@ -6,9 +6,10 @@
     "type": "git",
     "url": "git://github.com/livestyle/cssom-patcher.git"
   },
-  "main": "index.js",
+  "main": "out/livestyle-cssom.js",
   "scripts": {
-    "test": "./node_modules/.bin/mocha --reporter spec"
+    "test": "./node_modules/.bin/mocha --reporter spec",
+    "prepublish": "./node_modules/.bin/gulp"
   },
   "keywords": [
     "cssom",
