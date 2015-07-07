@@ -1,0 +1,10 @@
+body {
+	padding: 50px;
+}
+
+div {
+	border: 3px solid green;
+	padding: 3px;
+	color: blue;
+	margin-bottom: 10px;
+}

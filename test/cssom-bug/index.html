@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8" />
+	<title>CSSOM bug</title>
+	<link rel="stylesheet" href="style1.css" />
+</head>
+<body>
+	<div>Sample</div>
+	<button onclick="addImport()">Add @import</button>
+	<script>
+	function addImport() {
+		var ss = document.styleSheets[0];
+		ss.insertRule('@import url("style2.css")', 0);
+	}
+	</script>
+</body>
+</html>
