@@ -1,6 +1,5 @@
 var assert = require('assert');
 var cssom = require('cssom').parse;
-require('babel/register');
 var patcher = require('../');
 
 describe('CSSOM Patcher', function() {

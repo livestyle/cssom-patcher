@@ -1,18 +1,20 @@
+'use strict';
+
 /**
  * CSSOM LiveStyle patcher: maps incoming updates to browser’s 
  * CSS Object Model. This is a very fast method of applying 
  * incoming updates from LiveStyle which is also works in any
  * modern browser environment.
  */
-import pathfinder from 'livestyle-pathfinder';
-import splitBy from './lib/split';
+var pathfinder = require('livestyle-pathfinder');
+var splitBy = require('./lib/split');
 
 /**
  * Returns hash with available stylesheets. The keys of hash
  * are absolute urls and values are pointers to StyleSheet objects
  * @return {Object}
  */
-export function stylesheets() {
+var stylesheets = module.exports.stylesheets = function() {
 	return findStyleSheets(document.styleSheets);
 };
 
@@ -24,7 +26,7 @@ export function stylesheets() {
  * `false` if it’s impossible to apply patch on given 
  * stylesheet.
  */
-export function patch(stylesheet, patches) {
+var patch = module.exports.patch = function(stylesheet, patches) {
 	var self = this;
 	if (typeof stylesheet === 'string') {
 		stylesheet = this.stylesheets()[stylesheet];
@@ -75,7 +77,7 @@ export function patch(stylesheet, patches) {
 	return stylesheet;
 };
 
-export function createIndex(ctx, parent) {
+var createIndex = module.exports.createIndex = function(ctx, parent) {
 	var indexOf = function(item) {
 		return this.children.indexOf(item);
 	};
@@ -130,19 +132,24 @@ class NodePath {
 	constructor(path) {
 		this.components = [];
 		if (Array.isArray(path)) {
-			this.components = path.map(c => new NodePathComponent(c));
+			this.components = path.map(function(c) {
+				return new NodePathComponent(c);
+			});
 		}
 	}
 
 	toString() {
-		return this.components.map(c => c.toString(true)).join('/');
+		return this.components.map(function(c) {
+			return c.toString(true);
+		}).join('/');
 	}
 }
 
 class NodePathComponent {
 	constructor(name, pos) {
 		if (Array.isArray(name)) {
-			[name, pos] = name;
+			pos = name[1];
+			name = name[0]
 		}
 
 		this.name = normalizeSelector(name);
@@ -303,7 +310,9 @@ function updateProperties(rule, properties, patch) {
 function nameVariations(name) {
 	var out = [name];
 	if (name.indexOf('-') !== -1) {
-		var camelCased = name.replace(/\-([a-z])/g, (str, l) => l.toUpperCase());
+		var camelCased = name.replace(/\-([a-z])/g, function(str, l) {
+			return l.toUpperCase();
+		});
 		out.push(camelCased);
 		if (name[0] === '-') {
 			out.push(camelCased[0].toLowerCase() + camelCased.slice(1));
@@ -439,7 +448,9 @@ function deleteRuleFromMatch(match) {
 }
 
 function normalizeHints(hints) {
-	var comp = c => new NodePathComponent(c);
+	var comp = function(c) {
+		return new NodePathComponent(c);
+	};
 	return hints.map(function(hint) {
 		if (hint.before) {
 			hint.before = hint.before.map(comp);

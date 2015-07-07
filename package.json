@@ -20,12 +20,11 @@
   "author": "Sergey Chikuyonok <serge.che@gmail.com>",
   "license": "ISC",
   "devDependencies": {
-    "babel": "^5.1.9",
     "cssom": "^0.3.0",
-    "gulp": "^3.8.8",
+    "gulp": "^3.9.0",
     "gulp-rename": "^1.2.2",
     "js-bundler": "git+https://github.com/sergeche/js-bundler.git#v1.0.2",
-    "mocha": "^1.21.4"
+    "mocha": "^2.2.5"
   },
   "dependencies": {
     "livestyle-pathfinder": "git+https://github.com/livestyle/pathfinder.git"
