@@ -64,13 +64,13 @@ describe('CSSOM Patcher', function() {
 
 	it('add missing', function() {
 		var patch = {
-			path: [['c', 1]], 
+			path: [['e', 1]], 
 			action: 'add',
 			update: [{name: 'd', value: '1'}],
 			remove: []
 		};
 
-		assert.equal(apply('a{b:1;} c{d:1;}', patch), 'a {b: 1;} c {d: 1;} c {d: 1;}');
+		assert.equal(apply('a{b:1;} c{d:1;}', patch), 'a {b: 1;} c {d: 1;} e {d: 1;}');
 	});
 
 	it('sync properties', function() {

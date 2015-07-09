@@ -58,16 +58,20 @@ var patch = module.exports.patch = function(stylesheet, patches) {
 				return deleteRuleFromMatch(location);
 			}
 			var rule = location.node.ref;
-			if (patch.action === 'add') {
-				try {
-					var insertAt = patch.hints ? pathfinder.indexForHint(location.parent, last(patch.hints)) : location.node.ix + 1;
-					var ix = location.parent.ref.insertRule(ruleName(rule) + '{}', insertAt);
-					rule = location.parent.ref.cssRules[ix];
-				} catch (e) {
-					console.warn('LiveStyle:', e.message);
-					return;
-				}
-			}
+			// XXX this just doesn’t look right: if we have exact match
+			// on rule, why we should create new rule instead of updating
+			// matched one? This breaks updates on CSS with structural 
+			// optimizations. Removing for now.
+			// if (patch.action === 'add') {
+			// 	try {
+			// 		var insertAt = patch.hints ? pathfinder.indexForHint(location.parent, last(patch.hints)) : location.node.ix + 1;
+			// 		var ix = location.parent.ref.insertRule(ruleName(rule) + '{}', insertAt);
+			// 		rule = location.parent.ref.cssRules[ix];
+			// 	} catch (e) {
+			// 		console.warn('LiveStyle:', e.message);
+			// 		return;
+			// 	}
+			// }
 			return patchRule(rule, patch);
 		}
 
