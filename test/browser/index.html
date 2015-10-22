@@ -4,25 +4,15 @@
 	<meta charset="UTF-8" />
 	<title>Browser CSSOM test</title>
 	<link rel="stylesheet" href="file1.css" />
+	<link href="https://fonts.googleapis.com/css?family=Open+Sans" rel="stylesheet" />
 </head>
 <body>
 	<div>
 		<p class="sample">Hello world</p>
 	</div>
 	<div class="image"></div>
-	<script src="../../node_modules/requirejs/require.js"></script>
+	<script src="../../out/livestyle-cssom.js"></script>
 	<script>
-	var livestyleCSSOM = null;
-	requirejs.config({
-		paths: {
-			'livestyle-pathfinder': '../../node_modules/livestyle-pathfinder/index'
-		}
-	});
-
-	requirejs(['../../index'], function(ls) {
-		livestyleCSSOM = ls;
-	});
-
 	function parsePatch(patch, action) {
 		action = action || 'update';
 

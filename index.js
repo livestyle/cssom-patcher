@@ -189,13 +189,17 @@ function findStyleSheets(ctx, out) {
 		out[url] = item;
 		
 		// find @import rules
-		if (item.cssRules) {
-			for (var j = 0, jl = item.cssRules.length; j < jl; j++) {
-				if (item.cssRules[j].type == 3) {
-					findStyleSheets([item.cssRules[j].styleSheet], out);
+		// Firefox throws exception when accessing cssRules property 
+		// of stylesheet from different origin
+		try {
+			if (item.cssRules) {
+				for (var j = 0, jl = item.cssRules.length; j < jl; j++) {
+					if (item.cssRules[j].type == 3) {
+						findStyleSheets([item.cssRules[j].styleSheet], out);
+					}
 				}
 			}
-		}
+		} catch(e) {}
 	}
 	
 	return out;
