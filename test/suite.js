@@ -4,9 +4,9 @@ var patcher = require('../');
 
 describe('CSSOM Patcher', function() {
 	function apply(css, patch) {
-		return patcher.patch(cssom(css), patch).toString()
-			.trim()
-			.replace(/\n/g, ' ');
+		css = cssom(css);
+		patcher.patch(css, patch);
+		return css.toString().trim().replace(/\n/g, ' ');
 	}
 
 	it('strict match', function() {

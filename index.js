@@ -22,9 +22,9 @@ var stylesheets = module.exports.stylesheets = function() {
  * Updates given stylesheet with patches
  * @param  {CSSStyleSheet} stylesheet
  * @param  {Array} patches
- * @returns {StyleSheet} Patched stylesheet on success,
- * `false` if it’s impossible to apply patch on given 
- * stylesheet.
+ * @returns {StyleSheet} List of `insertRule` and `deleteRule` commands
+ * that can be applied to stylesheet to receive the same result
+ * (used for Shadow CSS in Chrome extension)
  */
 var patch = module.exports.patch = function(stylesheet, patches) {
 	var self = this;
@@ -40,11 +40,10 @@ var patch = module.exports.patch = function(stylesheet, patches) {
 		patches = [patches];
 	}
 
-	patches.forEach(function(patch) {
+	var result = patches.map(function(patch) {
 		var path = new NodePath(patch.path);
 		var hints = patch.hints ? normalizeHints(patch.hints) : null;
 		var index = self.createIndex(stylesheet);
-
 		var location = pathfinder.find(index, path, hints);
 
 		if (location.partial && patch.action === 'remove') {
@@ -55,30 +54,18 @@ var patch = module.exports.patch = function(stylesheet, patches) {
 		if (!location.partial) {
 			// exact match on node
 			if (patch.action === 'remove') {
-				return deleteRuleFromMatch(location);
+				deleteRuleFromMatch(location);
+				return resultOfDeletePatch(location);
 			}
-			var rule = location.node.ref;
-			// XXX this just doesn’t look right: if we have exact match
-			// on rule, why we should create new rule instead of updating
-			// matched one? This breaks updates on CSS with structural 
-			// optimizations. Removing for now.
-			// if (patch.action === 'add') {
-			// 	try {
-			// 		var insertAt = patch.hints ? pathfinder.indexForHint(location.parent, last(patch.hints)) : location.node.ix + 1;
-			// 		var ix = location.parent.ref.insertRule(ruleName(rule) + '{}', insertAt);
-			// 		rule = location.parent.ref.cssRules[ix];
-			// 	} catch (e) {
-			// 		console.warn('LiveStyle:', e.message);
-			// 		return;
-			// 	}
-			// }
-			return patchRule(rule, patch);
+			return patchRule(location.node.ref, patch);
 		}
 
-		patchRule(setupFromPartialMatch(location), patch);
-	});
+		var out = [];
+		var rule = setupFromPartialMatch(location, out);
+		return out.concat(patchRule(rule, patch));
+	}).filter(Boolean);
 
-	return stylesheet;
+	return flatten(result);
 };
 
 var createIndex = module.exports.createIndex = function(ctx, parent) {
@@ -127,6 +114,47 @@ var createIndex = module.exports.createIndex = function(ctx, parent) {
 
 function last(arr) {
 	return arr[arr.length - 1];
+}
+
+function flatten(input) {
+	var output = [];
+	for (var i = 0, il = input.length, value; i < il; i++) {
+		value = input[i];
+		if (Array.isArray(value)) {
+			output = output.concat(flatten(value));
+		} else {
+			output.push(value);
+		}
+	}
+	return output;
+}
+
+function isTopLevel(node) {
+	return node && node.parent && !node.parent.parent;
+}
+
+function resultOfDeletePatch(location) {
+	if (isTopLevel(location.node)) {
+		// matched top-level section, removed it
+		return {
+			action: 'delete',
+			index: location.node.ix
+		};
+	}
+
+	// matched inner node, mark top-level node as updated
+	var ctx = location.node;
+	while (ctx && !isTopLevel(ctx)) {
+		ctx = ctx.parent;
+	}
+	
+	if (ctx) {
+		return {
+			action: 'update',
+			index: ctx.ix,
+			value: ctx.ref.cssText
+		};
+	}
 }
 
 /**
@@ -335,9 +363,11 @@ function nameVariations(name) {
  * @param  {Array} patch
  */
 function patchRule(rule, patch) {
+	var result = [];
+
 	if (!rule) {
 		// not a CSSStyleRule, aborting
-		return;
+		return result;
 	}
 
 	var reAt = /^@/, childRule;
@@ -380,6 +410,11 @@ function patchRule(rule, patch) {
 	// insert @-properties as rules
 	while (childRule = updateRules['@charset'].pop()) {
 		rule.insertRule(childRule.name + ' ' + childRule.value, 0);
+		result.push({
+			action: 'insert',
+			index: 0,
+			value: childRule.name + ' ' + childRule.value
+		});
 	}
 
 	if (updateRules['@import'].length && rule.cssRules) {
@@ -395,11 +430,41 @@ function patchRule(rule, patch) {
 
 		while (childRule = updateRules['@import'].pop()) {
 			rule.insertRule(childRule.name + ' ' + childRule.value, childIx);
+			result.push({
+				action: 'insert',
+				index: childIx,
+				value: childRule.name + ' ' + childRule.value
+			});
 		}
 	}
+
+	// find parent rule
+	var ctx = rule;
+	while (ctx.parentRule) {
+		ctx = ctx.parentRule;
+	}
+
+	var ruleIx = -1;
+	var allRules = ctx.parentStyleSheet.cssRules;
+	for (var i = 0, il = allRules.length; i < il; i++) {
+		if (allRules[i] === ctx) {
+			ruleIx = i;
+			break;
+		}
+	}
+
+	if (ruleIx !== -1) {
+		result.push({
+			action: 'update',
+			index: ruleIx,
+			value: ctx.cssText
+		});
+	}
+
+	return result;
 }
 
-function setupFromPartialMatch(match) {
+function setupFromPartialMatch(match, result) {
 	// The `rest` property means we didn’t found exact section
 	// where patch should be applied, but some of its parents.
 	// In this case we have to re-create the `rest` sections
@@ -417,6 +482,14 @@ function setupFromPartialMatch(match) {
 	// console.log('Insert rule at index', insertIndex, match);
 	try {
 		var ix = parent.ref.insertRule(accumulated, insertIndex);
+		if (!parent.ref.parentStyleSheet) {
+			// inserted a top-level rule
+			result.push({
+				action: 'insert',
+				index: ix,
+				value: parent.ref.cssRules[ix].cssText
+			});
+		}
 	} catch (e) {
 		console.warn('LiveStyle:', e.message);
 		return;
@@ -439,6 +512,7 @@ function setupFromPartialMatch(match) {
 }
 
 function deleteRuleFromMatch(match) {
+	var result = null;
 	try {
 		parent(match.node.ref).deleteRule(match.node.ix);
 	} catch (e) {
