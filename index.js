@@ -54,8 +54,9 @@ var patch = module.exports.patch = function(stylesheet, patches) {
 		if (!location.partial) {
 			// exact match on node
 			if (patch.action === 'remove') {
+				var node = location.node;
 				deleteRuleFromMatch(location);
-				return resultOfDeletePatch(location);
+				return resultOfDeletePatch(node);
 			}
 			return patchRule(location.node.ref, patch);
 		}
@@ -133,17 +134,17 @@ function isTopLevel(node) {
 	return node && node.parent && !node.parent.parent;
 }
 
-function resultOfDeletePatch(location) {
-	if (isTopLevel(location.node)) {
+function resultOfDeletePatch(node) {
+	if (isTopLevel(node)) {
 		// matched top-level section, removed it
 		return {
 			action: 'delete',
-			index: location.node.ix
+			index: node.ix
 		};
 	}
 
 	// matched inner node, mark top-level node as updated
-	var ctx = location.node;
+	var ctx = node;
 	while (ctx && !isTopLevel(ctx)) {
 		ctx = ctx.parent;
 	}

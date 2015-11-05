@@ -48,20 +48,87 @@ describe('Shadow CSS', function() {
 		};
 
 		assert.equal.apply(assert, test('a {b: c;} d {b: f;}', p));
+		assert.equal.apply(assert, test('d {b: f;} a {b: c;}', p));
+		assert.equal.apply(assert, test('d {b: f;} a {}', p));
+		assert.equal.apply(assert, test('d {b: f;} a {foo: bar;}', p));
 
+		p.path = [['@media print', 1], ['a', 1]];
+		assert.equal.apply(assert, test('@media print {a {foo: bar;}}', p));
 
-		// console.log(patch('a {b: c;} d {b: f;}', p));
-
-		// assert.equal(apply('a {b: c;} d {b: f;}', patch), 'a {b: 2;} d {b: f;}');
-		// assert.equal(apply('d {b: f;} a {b: c;}', patch), 'd {b: f;} a {b: 2;}');
-		// assert.equal(apply('d {b: f;} a {}', patch), 'd {b: f;} a {b: 2;}');
-		// assert.equal(apply('d {b: f;} a {foo: bar;}', patch), 'd {b: f;} a {foo: bar; b: 2;}');
-
-		// patch.path = [['@media print', 1], ['a', 1]];
-		// assert.equal(apply('@media print {a {foo: bar;}}', patch), '@media print {a {foo: bar; b: 2;}}');
-
-		// // remove property
-		// patch.remove = [{name: 'foo', value: 'bar'}];
-		// assert.equal(apply('@media print {a {foo: bar;}}', patch), '@media print {a {b: 2;}}');
+		// remove property
+		p.remove = [{name: 'foo', value: 'bar'}];
+		assert.equal.apply(assert, test('@media print {a {foo: bar;}}', p));
 	});
+
+	it('nearest match', function() {
+		var p = {
+			path: [['a', 2]], 
+			action: 'update',
+			update: [{name: 'b', value: '2'}],
+			remove: []
+		};
+
+		assert.equal.apply(assert, test('a {b: c;}', p));
+	});
+
+	it('partial match', function() {
+		var p = {
+			path: [['c', 1]], 
+			action: 'update',
+			update: [{name: 'd', value: '2'}],
+			remove: []
+		};
+
+		assert.equal.apply(assert, test('a{b:1;}', p));
+		
+		p.path = [['@media print', 1], ['c', 1]];
+		assert.equal.apply(assert, test('a{b:1;}', p));
+
+		// remove section
+		var p = {
+			path: [['a', 1]], 
+			action: 'remove'
+		};
+		assert.equal.apply(assert, test('a{b:1;}', p));
+	});
+
+	it('add missing', function() {
+		var p = {
+			path: [['e', 1]], 
+			action: 'add',
+			update: [{name: 'd', value: '1'}],
+			remove: []
+		};
+
+		assert.equal.apply(assert, test('a{b:1;} c{d:1;}', p));
+	});
+
+	it('sync properties', function() {
+		var p = {
+			path: [['a', 1]], 
+			action: 'update',
+			update: [{name: 'd', value: '5'}],
+			remove: [],
+			all: [{name: 'b', value: '10'}, {name: 'c', value: '20'}, {name: 'd', value: '5'}]
+		};
+
+		// Node.js CSSOM doesn’t know about shorthand CSS-properties (for example,
+		// `background` is a shorthand for `background-color`, `background-position` etc.)
+		// so we just check if workflow with `all` patch property operated normally.
+
+		// In this case, patcher will override all properties from rule
+		assert.equal.apply(assert, test('a{b:1; c:2; d:3}', p));
+	});
+
+	// cannot test it right now: doesn’t work in current CSSOM and buggy in Chrome 
+	// it('top-level properties', function() {
+	// 	var p = {
+	// 		path: [], 
+	// 		action: 'update',
+	// 		update: [{name: '@import', value: 'url("abc")'}],
+	// 		remove: []
+	// 	};
+
+	// 	assert.equal.apply(assert, test('a{b:1}', p));
+	// });
 });
