@@ -446,11 +446,13 @@ function patchRule(rule, patch) {
 	}
 
 	var ruleIx = -1;
-	var allRules = ctx.parentStyleSheet.cssRules;
-	for (var i = 0, il = allRules.length; i < il; i++) {
-		if (allRules[i] === ctx) {
-			ruleIx = i;
-			break;
+	var allRules = ctx.cssRules || (ctx.parentStyleSheet && ctx.parentStyleSheet.cssRules);
+	if (allRules) {
+		for (var i = 0, il = allRules.length; i < il; i++) {
+			if (allRules[i] === ctx) {
+				ruleIx = i;
+				break;
+			}
 		}
 	}
 
