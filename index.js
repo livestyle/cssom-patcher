@@ -314,6 +314,12 @@ function updateProperties(rule, properties, patch) {
 		return;
 	}
 
+	if ('ownerNode' in rule) {
+		// A stylesheet (not CSS rule) cannot have properties;
+		// updating them in Chrome gives unpredictable result
+		return;
+	}
+
 	if (patch && patch.all) {
 		// there are few challenges when changing updated
 		// properies via CSSOM:
